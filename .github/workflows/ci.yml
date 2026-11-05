@@ -1,0 +1,50 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: Test (${{ matrix.os }}, Node ${{ matrix.node }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+        node: [20, 22]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+          cache: npm
+      - run: npm ci
+      - run: npm test
+
+  installer:
+    name: Installer
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Lint shell script
+        run: shellcheck install.sh
+      - name: Dry run for every agent
+        run: ./install.sh --agents claude,codex,openclaw,gemini,opencode,cursor,windsurf,claude-desktop,vscode --dry-run
+      - name: Install, then uninstall, in an isolated HOME
+        run: |
+          export HOME="$(mktemp -d)"
+          mkdir -p "$HOME/.cursor" "$HOME/.config/opencode"
+          ./install.sh --agents cursor,opencode
+          grep -q '"linkedin"' "$HOME/.cursor/mcp.json"
+          grep -q '"linkedin"' "$HOME/.config/opencode/opencode.json"
+          ./install.sh --agents cursor,opencode --uninstall
+          ! grep -q '"linkedin"' "$HOME/.cursor/mcp.json"

@@ -1,0 +1,264 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>linkedin-mcp: LinkedIn for your AI agent</title>
+<meta name="description" content="An open-source MCP server that lets AI agents read your LinkedIn profile basics and publish posts through LinkedIn's official API. You bring your own app, your keys stay on your machine.">
+<link rel="icon" href="logo.svg" type="image/svg+xml">
+<style>
+  :root {
+    --bg: #f7f8fa; --surface: #ffffff; --text: #151a24; --muted: #5a6478;
+    --line: #dfe3ea; --accent: #1f6feb; --accent-ink: #ffffff; --code: #eef1f6;
+    --good: #1a7f4b; --warn: #9a5b00;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #0c111b; --surface: #131a28; --text: #e8ecf4; --muted: #98a3b8;
+      --line: #263049; --accent: #5aa2ff; --accent-ink: #08111f; --code: #0a0f19;
+      --good: #4cc38a; --warn: #e0a64a;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #0c111b; --surface: #131a28; --text: #e8ecf4; --muted: #98a3b8;
+    --line: #263049; --accent: #5aa2ff; --accent-ink: #08111f; --code: #0a0f19;
+    --good: #4cc38a; --warn: #e0a64a;
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0; background: var(--bg); color: var(--text);
+    font: 16px/1.6 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+  .wrap { max-width: 960px; margin: 0 auto; padding: 0 16px; }
+  a { color: var(--accent); }
+  nav { border-bottom: 1px solid var(--line); background: var(--surface); }
+  nav .wrap { display: flex; align-items: center; gap: 16px; height: 56px; }
+  nav .brand { display: flex; align-items: center; gap: 10px; font-weight: 650; color: var(--text); text-decoration: none; }
+  nav img { width: 28px; height: 28px; border-radius: 7px; }
+  nav .links { margin-left: auto; display: flex; gap: 18px; font-size: 14px; }
+  nav .links a { color: var(--muted); text-decoration: none; }
+  nav .links a:hover { color: var(--text); }
+  @media (max-width: 560px) { nav .links a:not(.gh) { display: none; } }
+  header.hero { padding: 64px 0 40px; }
+  h1 { font-size: clamp(2rem, 5vw, 3.1rem); line-height: 1.1; margin: 0 0 16px; letter-spacing: -0.02em; }
+  .lead { font-size: 1.2rem; color: var(--muted); max-width: 640px; margin: 0 0 28px; }
+  .cta { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 28px; }
+  .btn { display: inline-block; padding: 10px 18px; border-radius: 8px; font-weight: 600; text-decoration: none; border: 1px solid var(--line); color: var(--text); background: var(--surface); }
+  .btn.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+  .cmd { display: flex; align-items: stretch; background: var(--code); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; max-width: 100%; }
+  .cmd code { flex: 1; padding: 14px 16px; overflow-x: auto; white-space: nowrap; font: 14px/1.4 ui-monospace, "SF Mono", Menlo, Consolas, monospace; }
+  .cmd button { border: 0; border-left: 1px solid var(--line); background: var(--surface); color: var(--text); padding: 0 16px; font: inherit; font-size: 14px; cursor: pointer; }
+  .cmd button:hover { background: var(--line); }
+  section { padding: 44px 0; border-top: 1px solid var(--line); }
+  h2 { font-size: 1.6rem; margin: 0 0 8px; letter-spacing: -0.01em; }
+  .sub { color: var(--muted); margin: 0 0 24px; max-width: 680px; }
+  .grid { display: grid; gap: 16px; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); }
+  .card { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 20px; }
+  .card h3 { margin: 0 0 6px; font-size: 1.05rem; }
+  .card p { margin: 0; color: var(--muted); font-size: 0.95rem; }
+  .tag { display: inline-block; font-size: 12px; font-weight: 600; padding: 2px 8px; border-radius: 99px; background: var(--code); border: 1px solid var(--line); color: var(--muted); margin-bottom: 10px; }
+  .diagram { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 16px; }
+  .diagram svg { width: 100%; height: auto; display: block; }
+  .diagram text { fill: var(--text); font: 600 13px system-ui, sans-serif; }
+  .diagram .small { fill: var(--muted); font-weight: 400; font-size: 11.5px; }
+  .diagram .box { fill: var(--code); stroke: var(--line); }
+  .diagram .edge { stroke: var(--accent); stroke-width: 2; fill: none; }
+  .diagram .fence { fill: none; stroke: var(--good); stroke-dasharray: 6 5; }
+  ol.steps { padding-left: 0; list-style: none; counter-reset: s; display: grid; gap: 14px; }
+  ol.steps li { counter-increment: s; display: grid; grid-template-columns: 36px 1fr; gap: 14px; align-items: start; }
+  ol.steps li::before { content: counter(s); width: 32px; height: 32px; border-radius: 50%; background: var(--accent); color: var(--accent-ink); display: grid; place-items: center; font-weight: 700; }
+  pre { margin: 8px 0 0; background: var(--code); border: 1px solid var(--line); border-radius: 8px; padding: 12px 14px; overflow-x: auto; font: 13.5px/1.5 ui-monospace, "SF Mono", Menlo, Consolas, monospace; }
+  .chat { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 18px; display: grid; gap: 12px; }
+  .msg { padding: 10px 14px; border-radius: 12px; max-width: 88%; font-size: 0.97rem; }
+  .msg.you { background: var(--accent); color: var(--accent-ink); justify-self: end; }
+  .msg.bot { background: var(--code); border: 1px solid var(--line); }
+  .msg small { display: block; color: var(--muted); margin-top: 4px; font-family: ui-monospace, Menlo, monospace; font-size: 12px; }
+  table { width: 100%; border-collapse: collapse; font-size: 0.95rem; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; overflow: hidden; }
+  th, td { text-align: left; padding: 10px 14px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { background: var(--code); font-size: 0.85rem; color: var(--muted); }
+  tr:last-child td { border-bottom: 0; }
+  .yes { color: var(--good); font-weight: 600; } .no { color: var(--warn); font-weight: 600; }
+  .scroll { overflow-x: auto; }
+  details { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; margin-bottom: 10px; }
+  summary { cursor: pointer; font-weight: 600; }
+  details p { margin: 10px 0 0; color: var(--muted); }
+  footer { border-top: 1px solid var(--line); padding: 28px 0 48px; color: var(--muted); font-size: 0.9rem; }
+  code.i { background: var(--code); border: 1px solid var(--line); border-radius: 5px; padding: 1px 6px; font-size: 0.9em; }
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+</style>
+</head>
+<body>
+<nav>
+  <div class="wrap">
+    <a class="brand" href="#top"><img src="logo.svg" alt="" width="28" height="28"> linkedin-mcp</a>
+    <div class="links">
+      <a href="#how">How it works</a>
+      <a href="#who">Who it's for</a>
+      <a href="#install">Install</a>
+      <a href="#faq">FAQ</a>
+      <a class="gh" href="https://github.com/aigamer-dev/linkedin-mcp">GitHub</a>
+    </div>
+  </div>
+</nav>
+
+<main id="top">
+<header class="hero">
+  <div class="wrap">
+    <h1>Let your AI agent work with your LinkedIn.</h1>
+    <p class="lead">linkedin-mcp is an open-source <a href="https://modelcontextprotocol.io">MCP</a> server. It lets agents like Claude Code, Codex, OpenClaw, Gemini CLI, OpenCode and Cursor read your LinkedIn profile basics and publish posts, through LinkedIn's official API. Your app, your keys, your machine.</p>
+    <div class="cta">
+      <a class="btn primary" href="#install">Install in one line</a>
+      <a class="btn" href="https://github.com/aigamer-dev/linkedin-mcp">View on GitHub</a>
+    </div>
+    <div class="cmd">
+      <code id="cmd">curl -fsSL https://raw.githubusercontent.com/aigamer-dev/linkedin-mcp/main/install.sh | bash</code>
+      <button type="button" id="copy">Copy</button>
+    </div>
+  </div>
+</header>
+
+<section id="what">
+  <div class="wrap">
+    <h2>What it does</h2>
+    <p class="sub">Two tools, kept deliberately small. Anything more would need LinkedIn permissions that individual developers can't get.</p>
+    <div class="grid">
+      <div class="card"><span class="tag">get_profile</span><h3>Know who's signed in</h3><p>Returns the authenticated member's name, email, photo and locale, so the agent knows whose account it is acting on.</p></div>
+      <div class="card"><span class="tag">create_post</span><h3>Publish a post</h3><p>Posts text to your feed, visible to the public or to your connections only. Up to 3,000 characters.</p></div>
+    </div>
+  </div>
+</section>
+
+<section id="how">
+  <div class="wrap">
+    <h2>How it works</h2>
+    <p class="sub">The server runs locally and talks to your agent over stdio. It is the only thing that ever holds your LinkedIn token.</p>
+    <div class="diagram">
+      <svg viewBox="0 0 760 210" role="img" aria-label="Your AI agent calls linkedin-mcp over stdio on your machine, which calls the official LinkedIn API over HTTPS">
+        <defs><marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 10 5 0 10z" fill="currentColor" style="color:var(--accent)"/></marker></defs>
+        <rect class="fence" x="12" y="14" width="486" height="182" rx="14"/>
+        <text x="28" y="36" class="small">Your machine</text>
+        <rect class="box" x="30" y="62" width="170" height="92" rx="10"/>
+        <text x="115" y="104" text-anchor="middle">AI agent</text>
+        <text x="115" y="124" text-anchor="middle" class="small">Claude Code, Codex, Cursor…</text>
+        <rect class="box" x="314" y="62" width="170" height="92" rx="10"/>
+        <text x="399" y="104" text-anchor="middle">linkedin-mcp</text>
+        <text x="399" y="124" text-anchor="middle" class="small">token + keys stay here</text>
+        <rect class="box" x="574" y="62" width="170" height="92" rx="10"/>
+        <text x="659" y="104" text-anchor="middle">LinkedIn API</text>
+        <text x="659" y="124" text-anchor="middle" class="small">official, OAuth 2.0</text>
+        <line class="edge" x1="202" y1="108" x2="312" y2="108" marker-end="url(#ar)"/>
+        <text x="257" y="98" text-anchor="middle" class="small">tool call</text>
+        <text x="257" y="130" text-anchor="middle" class="small">stdio</text>
+        <line class="edge" x1="486" y1="108" x2="572" y2="108" marker-end="url(#ar)"/>
+        <text x="529" y="98" text-anchor="middle" class="small">HTTPS</text>
+      </svg>
+    </div>
+    <h3 style="margin-top:28px">What a session looks like</h3>
+    <div class="chat" aria-label="Example conversation">
+      <div class="msg you">Draft a post about this week's release from the changelog, then publish it to my connections only.</div>
+      <div class="msg bot">Here's the draft: "We shipped v0.4: faster sync and a fix for…". Publish it as written?</div>
+      <div class="msg you">Yes, post it.</div>
+      <div class="msg bot">Posted to your connections.<small>create_post → visibility: CONNECTIONS</small></div>
+    </div>
+  </div>
+</section>
+
+<section id="who">
+  <div class="wrap">
+    <h2>Who it's for, and what for</h2>
+    <p class="sub">Anyone who already works in an AI agent and wants LinkedIn to be one more thing it can do.</p>
+    <div class="grid">
+      <div class="card"><h3>Developers and maintainers</h3><p>Turn a changelog, release notes or a PR into a launch post without leaving your terminal or editor.</p></div>
+      <div class="card"><h3>Writers and creators</h3><p>Draft with your agent, tweak the wording, publish in the same conversation. Keep a voice file in your project and let the agent follow it.</p></div>
+      <div class="card"><h3>Founders and small teams</h3><p>Share build-in-public updates from notes or commit history, with a human approving each post.</p></div>
+      <div class="card"><h3>Agent and workflow builders</h3><p>A small, readable reference for wiring an OAuth-backed API into MCP, with tests and a multi-agent installer.</p></div>
+    </div>
+  </div>
+</section>
+
+<section id="install">
+  <div class="wrap">
+    <h2>Install</h2>
+    <p class="sub">Needs Node.js 20+, npm and git. The installer finds the agents on your machine, builds the server and registers it. It backs up each config file before touching it.</p>
+    <div class="cmd"><code>curl -fsSL https://raw.githubusercontent.com/aigamer-dev/linkedin-mcp/main/install.sh | bash</code></div>
+    <pre>./install.sh --list                  # see which agents were detected
+./install.sh --agents claude,codex   # choose specific agents
+./install.sh --dry-run               # preview changes
+./install.sh --uninstall             # remove from all detected agents</pre>
+    <div class="scroll" style="margin-top:20px">
+    <table>
+      <thead><tr><th>Agent</th><th>How it's registered</th></tr></thead>
+      <tbody>
+        <tr><td>Claude Code</td><td><code class="i">claude mcp add --scope user</code></td></tr>
+        <tr><td>Codex CLI</td><td><code class="i">codex mcp add</code></td></tr>
+        <tr><td>OpenClaw</td><td><code class="i">openclaw mcp add --command node --arg …</code></td></tr>
+        <tr><td>Gemini CLI</td><td><code class="i">gemini mcp add --scope user</code></td></tr>
+        <tr><td>OpenCode, Cursor, Windsurf, Claude Desktop, VS Code</td><td>Edits that app's MCP config file</td></tr>
+        <tr><td>Anything else that speaks MCP</td><td>Run <code class="i">node dist/index.js</code> over stdio</td></tr>
+      </tbody>
+    </table>
+    </div>
+
+    <h3 style="margin-top:32px">Connect your LinkedIn account (one time)</h3>
+    <ol class="steps">
+      <li><div><strong>Create an app.</strong> At <a href="https://www.linkedin.com/developers/apps">linkedin.com/developers/apps</a>, using a LinkedIn Page you administer. App names can't contain "LinkedIn".</div></li>
+      <li><div><strong>Add two products:</strong> Share on LinkedIn, and Sign In with LinkedIn using OpenID Connect.</div></li>
+      <li><div><strong>Add the redirect URL</strong> <code class="i">http://localhost:3000/callback</code> on the Auth tab.</div></li>
+      <li><div><strong>Add your keys</strong> to <code class="i">.env</code> in the install folder, then authorize once:<pre>npm run auth</pre></div></li>
+      <li><div><strong>Restart your agent.</strong> Tokens last about 60 days; re-run <code class="i">npm run auth</code> to refresh.</div></li>
+    </ol>
+  </div>
+</section>
+
+<section id="limits">
+  <div class="wrap">
+    <h2>What it can't do</h2>
+    <p class="sub">LinkedIn's official API for individual developers is narrow. Better to know up front.</p>
+    <div class="scroll">
+    <table>
+      <thead><tr><th>Capability</th><th>Status</th></tr></thead>
+      <tbody>
+        <tr><td>Read your basic profile</td><td class="yes">Supported</td></tr>
+        <tr><td>Publish text posts to your feed</td><td class="yes">Supported</td></tr>
+        <tr><td>Edit headline, About, experience, skills</td><td class="no">Not available in the official API</td></tr>
+        <tr><td>Post as a Company Page</td><td class="no">Needs other permissions, not included</td></tr>
+        <tr><td>Messages, connections, search, analytics</td><td class="no">Not available to individual developers</td></tr>
+        <tr><td>Scheduling</td><td class="no">Not built in</td></tr>
+      </tbody>
+    </table>
+    </div>
+  </div>
+</section>
+
+<section id="faq">
+  <div class="wrap">
+    <h2>FAQ</h2>
+    <details><summary>Where do my credentials go?</summary><p>Your client ID and secret live in a local <code class="i">.env</code> file. The access token is saved at <code class="i">~/.config/linkedin-mcp/token.json</code> with owner-only permissions. Nothing is sent anywhere except LinkedIn's own API.</p></details>
+    <details><summary>Could an agent post something I didn't approve?</summary><p>An agent with this server connected can call <code class="i">create_post</code>. Posts go out as you, publicly by default. Use your agent's tool-approval setting so every post asks first.</p></details>
+    <details><summary>Is it safe for my LinkedIn account?</summary><p>It uses the official OAuth API and the documented posting endpoint. It does not scrape or automate the website, which is what usually gets accounts restricted. Posting volume and content are still your responsibility under LinkedIn's terms.</p></details>
+    <details><summary>Why do I need my own LinkedIn app?</summary><p>So your credentials and rate limits are yours alone. Nobody else's app, server or secret is involved.</p></details>
+    <details><summary>Does it work on Windows?</summary><p>The installer script targets macOS and Linux. On Windows, build with npm and add <code class="i">node dist/index.js</code> to your agent's MCP config by hand.</p></details>
+  </div>
+</section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <p>MIT licensed. Built by <a href="https://github.com/aigamer-dev">aigamer-dev</a>. <a href="https://github.com/aigamer-dev/linkedin-mcp">Source on GitHub</a>.</p>
+    <p>Not affiliated with or endorsed by LinkedIn. LinkedIn is a trademark of LinkedIn Corporation.</p>
+  </div>
+</footer>
+
+<script>
+  (function () {
+    var b = document.getElementById('copy'), c = document.getElementById('cmd');
+    if (!b || !c) return;
+    b.addEventListener('click', function () {
+      var done = function () { b.textContent = 'Copied'; setTimeout(function () { b.textContent = 'Copy'; }, 1600); };
+      try { navigator.clipboard.writeText(c.textContent).then(done, function () {}); } catch (e) {}
+    });
+  })();
+</script>
+</body>
+</html>
