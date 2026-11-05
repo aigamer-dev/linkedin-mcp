@@ -4,6 +4,9 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+### Security
+- Update `zod` to 4.6.7, fixing GHSA-mrhx-c7xc-m3w5 (memory exhaustion when validating oversized constrained collections). This project's schemas never validated collections, so it was not exploitable here.
+
 ## [0.1.0] - 2026-11-06
 
 ### Added
