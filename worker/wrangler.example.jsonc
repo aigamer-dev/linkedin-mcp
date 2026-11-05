@@ -1,0 +1,24 @@
+// Template for your own deployment. Copy to wrangler.jsonc (git-ignored) and fill in your values:
+//   cp wrangler.example.jsonc wrangler.jsonc
+// Keep wrangler.jsonc private. Secrets (LINKEDIN_CLIENT_ID, LINKEDIN_CLIENT_SECRET) never go in files:
+//   npx wrangler secret put LINKEDIN_CLIENT_ID
+//   npx wrangler secret put LINKEDIN_CLIENT_SECRET
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "linkedin-mcp",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-06-11",
+  "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
+  "observability": { "enabled": true },
+  "vars": {
+    // The public URL clients connect to. Tokens are bound to it, and <origin>/callback must be a
+    // redirect URL in your LinkedIn app. Set it after the first deploy, then redeploy.
+    "MCP_RESOURCE": "https://linkedin-mcp.YOUR-SUBDOMAIN.workers.dev/mcp",
+    // Shown on the privacy page as the contact for data requests.
+    "CONTACT_EMAIL": "privacy@example.com"
+  },
+  "kv_namespaces": [
+    // Create with: npx wrangler kv namespace create OAUTH_KV   (paste the id here)
+    { "binding": "OAUTH_KV", "id": "REPLACE_WITH_KV_ID" }
+  ]
+}

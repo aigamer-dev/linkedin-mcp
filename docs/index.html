@@ -106,13 +106,14 @@
 <header class="hero">
   <div class="wrap">
     <h1>Let your AI agent work with your LinkedIn.</h1>
-    <p class="lead">linkedin-mcp is an open-source <a href="https://modelcontextprotocol.io">MCP</a> server. It lets agents like Claude Code, Codex, OpenClaw, Gemini CLI, OpenCode and Cursor read your LinkedIn profile basics and publish posts, through LinkedIn's official API. Your app, your keys, your machine.</p>
+    <p class="lead">linkedin-mcp is an open-source <a href="https://modelcontextprotocol.io">MCP</a> connector. Add one URL to Claude, Cursor, OpenClaw or any MCP client, sign in with LinkedIn, and your agent can read your profile basics and publish posts after you approve them. No developer app, no keys.</p>
     <div class="cta">
-      <a class="btn primary" href="#install">Install in one line</a>
-      <a class="btn" href="https://github.com/aigamer-dev/linkedin-mcp">View on GitHub</a>
+      <a class="btn primary" href="#hosted">Connect in 30 seconds</a>
+      <a class="btn" href="#install">Run it locally instead</a>
+      <a class="btn" href="https://github.com/aigamer-dev/linkedin-mcp">GitHub</a>
     </div>
     <div class="cmd">
-      <code id="cmd">curl -fsSL https://raw.githubusercontent.com/aigamer-dev/linkedin-mcp/main/install.sh | bash</code>
+      <code id="cmd">https://linkedin-mcp.hariharankvasn.workers.dev/mcp</code>
       <button type="button" id="copy">Copy</button>
     </div>
   </div>
@@ -177,10 +178,37 @@
   </div>
 </section>
 
+<section id="hosted">
+  <div class="wrap">
+    <h2>Connect in 30 seconds</h2>
+    <p class="sub">The hosted connector works like any other connector in your assistant: add the URL, click Connect, approve. You never create a LinkedIn app or handle keys.</p>
+    <p class="sub" style="margin-bottom:8px">Or add it to every agent on your machine with one command:</p>
+    <div class="cmd" style="margin-bottom:24px"><code>curl -fsSL https://raw.githubusercontent.com/aigamer-dev/linkedin-mcp/main/install.sh | bash -s -- --hosted</code></div>
+    <ol class="steps">
+      <li><div><strong>Add the connector.</strong> In Claude, go to Settings → Connectors → Add custom connector and paste <code class="i">https://linkedin-mcp.hariharankvasn.workers.dev/mcp</code>. Other clients are in the table below.</div></li>
+      <li><div><strong>Choose what to allow.</strong> A consent page shows which app is asking. You decide whether posting is allowed at all.</div></li>
+      <li><div><strong>Sign in on LinkedIn.</strong> You approve on LinkedIn's own screen. We never see your password.</div></li>
+      <li><div><strong>Use it.</strong> Ask your assistant to show your profile or draft and publish a post. LinkedIn access lasts about 60 days, then you reconnect.</div></li>
+    </ol>
+    <div class="scroll" style="margin-top:20px">
+    <table>
+      <thead><tr><th>Client</th><th>How</th></tr></thead>
+      <tbody>
+        <tr><td>Claude Code</td><td><code class="i">claude mcp add --transport http --scope user linkedin https://linkedin-mcp.hariharankvasn.workers.dev/mcp</code></td></tr>
+        <tr><td>OpenClaw</td><td><code class="i">openclaw mcp add linkedin --url https://linkedin-mcp.hariharankvasn.workers.dev/mcp --transport streamable-http --auth oauth</code></td></tr>
+        <tr><td>Cursor / VS Code</td><td>Add the URL to <code class="i">mcp.json</code> (see the <a href="https://github.com/aigamer-dev/linkedin-mcp#fastest-the-hosted-connector">README</a>)</td></tr>
+        <tr><td>Any MCP client</td><td>Remote server with OAuth 2.1 and dynamic client registration</td></tr>
+      </tbody>
+    </table>
+    </div>
+    <p class="sub" style="margin-top:16px">What is stored: your LinkedIn member ID, name and an encrypted access token. Never the text of your posts. Posting is limited to 10 per day. See the <a href="https://linkedin-mcp.hariharankvasn.workers.dev/privacy">privacy policy</a> and <a href="https://linkedin-mcp.hariharankvasn.workers.dev/terms">terms</a>.</p>
+  </div>
+</section>
+
 <section id="install">
   <div class="wrap">
-    <h2>Install</h2>
-    <p class="sub">Needs Node.js 20+, npm and git. The installer finds the agents on your machine, builds the server and registers it. It backs up each config file before touching it.</p>
+    <h2>Or run it locally with your own app</h2>
+    <p class="sub">For people who want everything on their own machine and their own LinkedIn app. Needs Node.js 20+, npm and git. The installer finds the agents on your machine, builds the server and registers it. It backs up each config file before touching it.</p>
     <div class="cmd"><code>curl -fsSL https://raw.githubusercontent.com/aigamer-dev/linkedin-mcp/main/install.sh | bash</code></div>
     <pre>./install.sh --list                  # see which agents were detected
 ./install.sh --agents claude,codex   # choose specific agents
@@ -234,10 +262,10 @@
 <section id="faq">
   <div class="wrap">
     <h2>FAQ</h2>
-    <details><summary>Where do my credentials go?</summary><p>Your client ID and secret live in a local <code class="i">.env</code> file. The access token is saved at <code class="i">~/.config/linkedin-mcp/token.json</code> with owner-only permissions. Nothing is sent anywhere except LinkedIn's own API.</p></details>
+    <details><summary>Where do my credentials go?</summary><p><strong>Hosted:</strong> LinkedIn's app secret is a Cloudflare Worker secret, and your access token is stored encrypted and only released to the connection you approved. You never handle keys. <strong>Local:</strong> your client ID and secret live in a local <code class="i">.env</code> file and the token is saved at <code class="i">~/.config/linkedin-mcp/token.json</code> with owner-only permissions. Nothing is sent anywhere except LinkedIn's own API.</p></details>
     <details><summary>Could an agent post something I didn't approve?</summary><p>An agent with this server connected can call <code class="i">create_post</code>. Posts go out as you, publicly by default. Use your agent's tool-approval setting so every post asks first.</p></details>
     <details><summary>Is it safe for my LinkedIn account?</summary><p>It uses the official OAuth API and the documented posting endpoint. It does not scrape or automate the website, which is what usually gets accounts restricted. Posting volume and content are still your responsibility under LinkedIn's terms.</p></details>
-    <details><summary>Why do I need my own LinkedIn app?</summary><p>So your credentials and rate limits are yours alone. Nobody else's app, server or secret is involved.</p></details>
+    <details><summary>Do I need my own LinkedIn app?</summary><p>Not with the hosted connector, which uses a shared app. Run the local version if you want your own app, so your credentials and rate limits are yours alone and no third party stores your token.</p></details>
     <details><summary>Does it work on Windows?</summary><p>The installer script targets macOS and Linux. On Windows, build with npm and add <code class="i">node dist/index.js</code> to your agent's MCP config by hand.</p></details>
   </div>
 </section>

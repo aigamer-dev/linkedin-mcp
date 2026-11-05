@@ -1,0 +1,3 @@
+# Local development only. Copy to .dev.vars (git-ignored). For production use `wrangler secret put`.
+LINKEDIN_CLIENT_ID=
+LINKEDIN_CLIENT_SECRET=

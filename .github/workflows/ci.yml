@@ -26,6 +26,22 @@ jobs:
       - run: npm ci
       - run: npm test
 
+  worker:
+    name: Hosted connector (Worker)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: worker
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: worker/package-lock.json
+      - run: npm ci
+      - run: npm test
+
   installer:
     name: Installer
     runs-on: ubuntu-latest
@@ -39,6 +55,18 @@ jobs:
         run: shellcheck install.sh
       - name: Dry run for every agent
         run: ./install.sh --agents claude,codex,openclaw,gemini,opencode,cursor,windsurf,claude-desktop,vscode --dry-run
+      - name: Hosted mode dry run for every agent
+        run: ./install.sh --hosted --agents claude,codex,openclaw,gemini,opencode,cursor,windsurf,claude-desktop,vscode --dry-run
+      - name: Hosted mode install, then uninstall, in an isolated HOME
+        run: |
+          export HOME="$(mktemp -d)"
+          mkdir -p "$HOME/.cursor" "$HOME/.config/opencode" "$HOME/.codeium/windsurf"
+          ./install.sh --hosted --agents cursor,opencode,windsurf
+          grep -q '"url": "https://linkedin-mcp' "$HOME/.cursor/mcp.json"
+          grep -q '"type": "remote"' "$HOME/.config/opencode/opencode.json"
+          grep -q '"serverUrl"' "$HOME/.codeium/windsurf/mcp_config.json"
+          ./install.sh --hosted --agents cursor,opencode,windsurf --uninstall
+          ! grep -q '"linkedin"' "$HOME/.cursor/mcp.json"
       - name: Install, then uninstall, in an isolated HOME
         run: |
           export HOME="$(mktemp -d)"

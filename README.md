@@ -28,7 +28,36 @@
 
 LinkedIn does not offer profile editing, messaging, search or analytics to individual developers, so those are out of scope. See the [limits table](https://aigamer-dev.github.io/linkedin-mcp/#limits).
 
-## Quick start
+## Fastest: the hosted connector
+
+No app to create, no keys, nothing to install. Add this URL as a remote MCP connector, click **Connect** and sign in to LinkedIn:
+
+```text
+https://linkedin-mcp.hariharankvasn.workers.dev/mcp
+```
+
+| Client | How |
+|--------|-----|
+| Claude (web, desktop) and other apps with a connectors screen | Settings → Connectors → Add custom connector → paste the URL |
+| Claude Code | `claude mcp add --transport http --scope user linkedin https://linkedin-mcp.hariharankvasn.workers.dev/mcp`, then `/mcp` to sign in |
+| OpenClaw | `openclaw mcp add linkedin --url https://linkedin-mcp.hariharankvasn.workers.dev/mcp --transport streamable-http --auth oauth` |
+| Cursor | add `{"mcpServers":{"linkedin":{"url":"https://linkedin-mcp.hariharankvasn.workers.dev/mcp"}}}` to `~/.cursor/mcp.json` |
+| VS Code | add `{"servers":{"linkedin":{"type":"http","url":"https://linkedin-mcp.hariharankvasn.workers.dev/mcp"}}}` to your user `mcp.json` |
+| Any other MCP client | Use the URL; the server supports OAuth 2.1 with dynamic client registration |
+
+Or add it to every agent detected on your machine with one command (no Node, clone or build needed for the CLI-based agents):
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/aigamer-dev/linkedin-mcp/main/install.sh | bash -s -- --hosted
+```
+
+Add `--agents claude,cursor` to choose, `--dry-run` to preview, `--uninstall` to remove, or `--url https://your-own-deployment/mcp` to point at your own deployment of [`worker/`](worker/).
+
+You approve on a consent page (including whether posting is allowed) and then on LinkedIn's own screen. LinkedIn's access lasts about 60 days, after which you reconnect. Posting is limited to 10 posts per day per member. See the [privacy policy](https://linkedin-mcp.hariharankvasn.workers.dev/privacy) for exactly what is stored (your LinkedIn member ID, name and an encrypted access token; never the text of your posts).
+
+Prefer to keep everything on your own machine, or to use your own LinkedIn app? Use the local version below.
+
+## Run it locally (your own LinkedIn app)
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/aigamer-dev/linkedin-mcp/main/install.sh | bash
@@ -91,9 +120,9 @@ args = ["/path/to/linkedin-mcp/dist/index.js"]
 
 Any other MCP client works too: launch `node dist/index.js` and speak MCP over stdio.
 
-## Connect your LinkedIn account
+## Connect your LinkedIn account (local version only)
 
-One time, about five minutes.
+The hosted connector does this for you. For the local server, one time, about five minutes.
 
 1. Create a LinkedIn Page you administer (a small personal-brand page is fine) and an app at <https://www.linkedin.com/developers/apps>. App names cannot contain "LinkedIn".
 2. On the **Products** tab, add **Share on LinkedIn** and **Sign In with LinkedIn using OpenID Connect**.
@@ -125,7 +154,8 @@ Once connected, just ask your agent:
 
 ## Security
 
-- Credentials live only in your local `.env` and token file. Nothing is sent anywhere except `api.linkedin.com` and `www.linkedin.com`.
+- **Local version:** credentials live only in your `.env` and token file. Nothing is sent anywhere except `api.linkedin.com` and `www.linkedin.com`.
+- **Hosted connector:** runs on Cloudflare Workers. The LinkedIn app secret is held as a Worker secret, and each member's access token is stored encrypted and only released to the connection they approved. Source is in [`worker/`](worker/), so you can audit it or deploy your own copy.
 - `create_post` publishes as you, publicly by default. Set your agent to ask for approval on tool calls so every post is confirmed.
 - Never commit `.env`; it is git-ignored. Report vulnerabilities privately through the repository's Security tab.
 

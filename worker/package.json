@@ -1,0 +1,27 @@
+{
+  "name": "linkedin-mcp-worker",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Hosted remote MCP server for LinkedIn on Cloudflare Workers",
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "typecheck": "tsc --noEmit",
+    "test": "tsc --noEmit && node --test test/worker.test.mjs"
+  },
+  "license": "MIT",
+  "dependencies": {
+    "@cloudflare/workers-oauth-provider": "^1.2.4",
+    "@modelcontextprotocol/server": "^2.4.0",
+    "agents": "^0.33.0",
+    "hono": "^4.13.16",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^5.20261104.1",
+    "@types/node": "^26.6.6",
+    "typescript": "^7.0.2",
+    "wrangler": "^4.158.0"
+  }
+}
