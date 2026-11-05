@@ -2,3 +2,6 @@ node_modules/
 dist/
 .env
 *.log
+
+# Nested private repo (aigamer-dev/linkedin-mcp-deploy): maintainer deployment config. Never tracked here.
+private/
