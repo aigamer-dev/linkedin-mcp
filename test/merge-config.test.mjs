@@ -42,6 +42,31 @@ test("opencode and vscode formats", () => {
   assert.equal(read(vs).servers.linkedin.type, "stdio");
 });
 
+test("add-remote writes each app's remote shape", () => {
+  const url = "https://example.workers.dev/mcp";
+  const dir = mkdtempSync(join(tmpdir(), "lm-"));
+  const expect = {
+    mcpServers: ["mcpServers", { url }],
+    windsurf: ["mcpServers", { serverUrl: url }],
+    gemini: ["mcpServers", { httpUrl: url }],
+    vscode: ["servers", { type: "http", url }],
+    opencode: ["mcp", { type: "remote", url, enabled: true }],
+  };
+  for (const [format, [section, entry]] of Object.entries(expect)) {
+    const f = join(dir, `${format}.json`);
+    assert.equal(run("add-remote", f, format, "linkedin", url).status, 0, format);
+    assert.deepEqual(read(f)[section].linkedin, entry, format);
+  }
+});
+
+test("add-remote rejects a non-http URL and keeps other servers", () => {
+  const f = join(mkdtempSync(join(tmpdir(), "lm-")), "mcp.json");
+  writeFileSync(f, JSON.stringify({ mcpServers: { other: { command: "x" } } }));
+  assert.equal(run("add-remote", f, "mcpServers", "linkedin", "file:///etc/passwd").status, 2);
+  run("add-remote", f, "mcpServers", "linkedin", "https://example.com/mcp");
+  assert.deepEqual(Object.keys(read(f).mcpServers).sort(), ["linkedin", "other"]);
+});
+
 test("remove deletes only the named server", () => {
   const f = join(mkdtempSync(join(tmpdir(), "lm-")), "mcp.json");
   writeFileSync(f, JSON.stringify({ mcpServers: { other: { command: "x" } } }));

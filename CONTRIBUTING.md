@@ -76,6 +76,40 @@ Edit `install.sh`:
 
 The installer must stay idempotent, back up files it edits, and refuse to modify config files it cannot parse.
 
+## The hosted connector (`worker/`)
+
+A separate TypeScript project: a remote MCP server on Cloudflare Workers that signs members in with LinkedIn through one shared LinkedIn app, so end users need no developer account.
+
+| File | Purpose |
+|------|---------|
+| `src/index.ts` | Wires `OAuthProvider` (authorize, token and registration endpoints) to the MCP handler on `/mcp` |
+| `src/auth-handler.ts` | `/authorize` consent page, redirect to LinkedIn, `/callback`, plus the public pages |
+| `src/server.ts` | The MCP tools, reading the signed-in member from `getMcpAuthContext()` |
+| `src/linkedin.ts` | LinkedIn OAuth and API calls |
+| `src/pages.ts` | HTML for the consent, privacy, terms and home pages (escape everything from clients) |
+| `test/worker.test.mjs` | Boots `wrangler dev` and drives the OAuth flow end to end |
+
+```bash
+cd worker
+npm install
+cp .dev.vars.example .dev.vars          # local-only LinkedIn credentials (git-ignored)
+cp wrangler.example.jsonc wrangler.jsonc # your private deployment config (git-ignored)
+npm test                         # type-check, then the integration tests
+npm run dev                      # http://localhost:8787
+```
+
+To try the real LinkedIn flow locally, add `http://localhost:8787/callback` as a redirect URL in a LinkedIn developer app of your own.
+
+**Public vs private.** The repo contains the code and a template (`wrangler.example.jsonc`). Everything specific to a live deployment is kept out of it: the real `wrangler.jsonc` (KV namespace id, public URL, contact email) and `.dev.vars` are git-ignored, and the LinkedIn client ID and secret live only in Cloudflare's secret store. Tests always use the template, never your private config. If you change what the config needs, update the template and the privacy-relevant docs in the same PR.
+
+**Deploying is maintainer-only.** Deploys run from the maintainer's machine with `npm run deploy`; secrets are set with `npx wrangler secret put LINKEDIN_CLIENT_ID` and `LINKEDIN_CLIENT_SECRET` (never in files or CI logs). `MCP_RESOURCE` in `wrangler.jsonc` must equal the public URL clients connect to, and the matching `/callback` URL must be registered in the LinkedIn app. Changing either breaks existing connections.
+
+Things that bite:
+- **Do not add `form-action` to the consent page's Content-Security-Policy.** Browsers apply it to the whole redirect chain after the form posts, which blocks the final redirect back to the MCP client. A test guards this.
+- Never log or return `props.accessToken` or anything from `authInfo.extra`.
+- LinkedIn gives no refresh tokens to this kind of app. Tokens last about 60 days and members must reconnect; keep the error messages for that clear.
+- The privacy policy in `src/pages.ts` is a promise. If you change what is stored, change the policy and the CHANGELOG in the same PR.
+
 ## Tests and CI
 
 `npm test` builds the project and runs two suites:

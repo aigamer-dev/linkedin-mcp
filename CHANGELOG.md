@@ -4,6 +4,11 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+### Added
+- Hosted remote MCP connector (`worker/`, Cloudflare Workers): users add one URL and sign in with LinkedIn, with no developer app of their own. OAuth 2.1 with dynamic client registration, a consent page with per-member posting permission, privacy and terms pages, and a 10 posts per day per member limit.
+- `install.sh --hosted` (and `--url`): registers the hosted connector's URL with Claude Code, OpenClaw, Gemini CLI, OpenCode, Cursor, Windsurf and VS Code using each app's own syntax, prints the right steps for Codex and Claude Desktop, and needs no clone or build. `scripts/merge-config.mjs` gained an `add-remote` action.
+- CI job that boots the Worker locally and exercises the full OAuth flow.
+
 ### Security
 - Update `zod` to 4.6.7, fixing GHSA-mrhx-c7xc-m3w5 (memory exhaustion when validating oversized constrained collections). This project's schemas never validated collections, so it was not exploitable here.
 

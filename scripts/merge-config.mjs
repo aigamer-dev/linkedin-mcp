@@ -1,13 +1,16 @@
 #!/usr/bin/env node
 // Idempotent JSON config editor used by install.sh.
-// Usage: merge-config.mjs <add|remove> <file> <format> <name> [command] [argsJson]
-// formats: mcpServers | vscode | opencode
+// Usage:
+//   merge-config.mjs add        <file> <format> <name> <command> [argsJson]   local stdio server
+//   merge-config.mjs add-remote <file> <format> <name> <url>                  hosted (remote) server
+//   merge-config.mjs remove     <file> <format> <name>
+// formats: mcpServers (Cursor, Claude Desktop) | vscode | opencode | windsurf | gemini
 import { readFileSync, writeFileSync, mkdirSync, existsSync, copyFileSync } from "node:fs";
 import { dirname } from "node:path";
 
 const [, , action, file, format, name, command, argsJson] = process.argv;
 if (!action || !file || !format || !name) {
-  console.error("usage: merge-config.mjs <add|remove> <file> <format> <name> [command] [argsJson]");
+  console.error("usage: merge-config.mjs <add|add-remote|remove> <file> <format> <name> [command|url] [argsJson]");
   process.exit(2);
 }
 
@@ -38,6 +41,24 @@ if (action === "add") {
   } else {
     cfg[section][name] = { command, args };
   }
+} else if (action === "add-remote") {
+  const url = command;
+  if (!url || !/^https?:\/\//.test(url)) {
+    console.error("add-remote needs an http(s) URL");
+    process.exit(2);
+  }
+  if (format === "opencode") {
+    cfg.$schema ??= "https://opencode.ai/config.json";
+    cfg[section][name] = { type: "remote", url, enabled: true };
+  } else if (format === "vscode") {
+    cfg[section][name] = { type: "http", url };
+  } else if (format === "windsurf") {
+    cfg[section][name] = { serverUrl: url };
+  } else if (format === "gemini") {
+    cfg[section][name] = { httpUrl: url };
+  } else {
+    cfg[section][name] = { url };
+  }
 } else if (action === "remove") {
   delete cfg[section][name];
 } else {
@@ -47,4 +68,4 @@ if (action === "add") {
 
 mkdirSync(dirname(file), { recursive: true });
 writeFileSync(file, JSON.stringify(cfg, null, 2) + "\n");
-console.log(`${action === "add" ? "Registered in" : "Removed from"} ${file}`);
+console.log(`${action === "remove" ? "Removed from" : "Registered in"} ${file}`);
