@@ -31,7 +31,6 @@ Run `npm test` before proposing a change. If you edit `install.sh`, also run `sh
 - The installer must stay idempotent, back up every file it edits, and refuse to edit config it cannot parse as plain JSON. Do not "fix" that by stripping comments or rewriting the file.
 - Changing a tool's name, inputs or required scopes is a breaking change: update `README.md`, `docs/index.html` and `CHANGELOG.md` together.
 - LinkedIn app names cannot contain "LinkedIn". Do not use LinkedIn or other vendors' logos or branding in the project.
-- Do not add `Co-Authored-By`, "Generated with", "Built by" or any AI/tool signing to commits, PR bodies, code or docs.
 
 ## Workflow
 
